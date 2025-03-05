@@ -3,9 +3,12 @@ package toolchain
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"sync"
 	"time"
 
@@ -17,6 +20,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+type FeesHistory struct {
+	OldestBlock   common.Hash    `json:"oldestBlock"`
+	BaseFees      []*hexutil.Big `json:"baseFees"`
+	GasUsedRatios []float64      `json:"gasUsedRatios"`
+}
 
 func NewTransaction(thor *thorgo.Thor, managers []*txmanager.PKManager, address common.Address) (string, error) {
 	manager := random.Element(managers)
@@ -39,7 +48,19 @@ func NewTransaction(thor *thorgo.Thor, managers []*txmanager.PKManager, address 
 		clauses[i] = clause
 	}
 
-	best, err := thor.Blocks.Best()
+	// HTTP GET request to /fees/history?newestBlock=next&blockCount=1
+	resp, err := http.Get("http://localhost:8669/fees/history?newestBlock=next&blockCount=1")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var feesHistory FeesHistory
+	err = json.Unmarshal(body, &feesHistory)
 	if err != nil {
 		return "", err
 	}
@@ -48,12 +69,9 @@ func NewTransaction(thor *thorgo.Thor, managers []*txmanager.PKManager, address 
 		return "", err
 	}
 
-	baseFee := big.NewInt(0).Mul(best.BaseFee.ToInt(), big.NewInt(9))
-	baseFee = baseFee.Div(baseFee, big.NewInt(8))
-
 	// TODO: Something better here??
 	options := new(transactions.OptionsBuilder).
-		MaxFeePerGas(baseFee).
+		MaxFeePerGas(new(big.Int).Add(feesHistory.BaseFees[0].ToInt(), suggestion.MaxPriorityFeePerGas.ToInt())).
 		MaxPriorityFeePerGas(suggestion.MaxPriorityFeePerGas.ToInt()).
 		Build()
 
