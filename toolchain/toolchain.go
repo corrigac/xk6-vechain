@@ -70,9 +70,18 @@ func NewTransaction(thor *thorgo.Thor, managers []*txmanager.PKManager, address 
 	}
 
 	// TODO: Something better here??
+    // increaseFactor := big.NewInt(int64(1.05 * 100))
+    // value1 := new(big.Int).Mul(feesHistory.BaseFees[0].ToInt(), increaseFactor)
+    // maxFeePerGas := new(big.Int).Div(value1, big.NewInt(100))
+	// tip := new(big.Int).Sub(maxFeePerGas, feesHistory.BaseFees[0].ToInt())
+	
+	
+	tip := suggestion.MaxPriorityFeePerGas.ToInt()
+	maxFeePerGas := new(big.Int).Add(feesHistory.BaseFees[0].ToInt(), tip)
+
 	options := new(transactions.OptionsBuilder).
-		MaxFeePerGas(new(big.Int).Add(feesHistory.BaseFees[0].ToInt(), suggestion.MaxPriorityFeePerGas.ToInt())).
-		MaxPriorityFeePerGas(suggestion.MaxPriorityFeePerGas.ToInt()).
+		MaxFeePerGas(maxFeePerGas).
+		MaxPriorityFeePerGas(tip).
 		Build()
 
 	transaction, err := thor.Transactor(clauses).Build(manager.Address(), options)
