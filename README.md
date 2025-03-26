@@ -16,6 +16,10 @@ Start thor solo:
 docker run -p 8669:8669 ghcr.io/vechain/thor:release-galactica-latest solo --api-addr 0.0.0.0:8669
 ```
 
+```
+docker run -p 8669:8669 ghcr.io/vechain/thor:release-galactica-latest solo --api-addr 0.0.0.0:8669 --api-priority-fees-percentage 2
+```
+
 **Optional**: Start Grafana + InfluxDB:
 
 ```bash
@@ -28,5 +32,5 @@ To run the tests:
 K6_INFLUXDB_ORGANIZATION=vechain \
 K6_INFLUXDB_BUCKET=vechain \
 K6_INFLUXDB_TOKEN=admin-token \
-./k6 run -o xk6-influxdb=http://localhost:8086 test.js
+./k6 run -o xk6-influxdb=http://localhost:8086 --quiet test.js
 ```

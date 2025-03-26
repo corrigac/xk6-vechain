@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"math/big"
@@ -68,16 +69,15 @@ func NewTransaction(thor *thorgo.Thor, managers []*txmanager.PKManager, address 
 	if err != nil {
 		return "", err
 	}
-
-	// TODO: Something better here??
-    // increaseFactor := big.NewInt(int64(1.05 * 100))
-    // value1 := new(big.Int).Mul(feesHistory.BaseFees[0].ToInt(), increaseFactor)
-    // maxFeePerGas := new(big.Int).Div(value1, big.NewInt(100))
-	// tip := new(big.Int).Sub(maxFeePerGas, feesHistory.BaseFees[0].ToInt())
-	
 	
 	tip := suggestion.MaxPriorityFeePerGas.ToInt()
 	maxFeePerGas := new(big.Int).Add(feesHistory.BaseFees[0].ToInt(), tip)
+
+	baseFee := new(big.Int)
+    baseFee, _ = baseFee.SetString(feesHistory.BaseFees[0].String()[2:], 16)
+	fmt.Printf("Block BaseFee: %s\n", baseFee.String())
+	fmt.Printf("Tx MaxPriorityFeePerGas: %s\n", tip.String())
+	fmt.Printf("Tx MaxFeePerGas: %s\n\n\n", maxFeePerGas.String())
 
 	options := new(transactions.OptionsBuilder).
 		MaxFeePerGas(maxFeePerGas).
